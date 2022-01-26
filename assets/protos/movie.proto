@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package sample;
+
+option go_package = "example.com/go_grpc_template;rpc";
+
+service MovieService {
+  rpc FetchArticle (FetchRequest) returns (ListMovie);
+  rpc GetArticle (SingleRequest) returns (Movie);
+}
+
+
+message SingleRequest{
+  string id=1;
+}
+
+message FetchRequest{
+  string searchword=1;
+  string page =2;
+}
+
+message ListMovie{
+  repeated Movie Movies=1;
+}
+
+message Movie{
+  string        imdbID       =1;
+	string        Title    =2;
+	string        Year  =3 ;
+  string        Rated  =4 ;
+  string        Runtime  =5 ;
+  string        Genre  =6 ;
+}
+

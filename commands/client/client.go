@@ -2,10 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"go-grpc/internal/rpc"
-	"google.golang.org/grpc"
 	"log"
+	"sync"
 	"time"
+
+	"google.golang.org/grpc"
 )
 
 const (
@@ -13,21 +16,45 @@ const (
 )
 
 func main() {
-	conn , err := grpc.Dial(address , grpc.WithInsecure() , grpc.WithBlock())
-	if err != nil{
-		log.Fatalf("did not connect: %v" , err)
+	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
 
-	c := rpc.NewSampleServiceClient(conn)
-	ctx  , cancel := context.WithTimeout(context.Background() , time.Second)
+	c := rpc.NewMovieServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
+	fmt.Println("===============================FETCH MOVIES===============================================")
 
-	result , err := c.CreateSample(ctx , &rpc.NewSample{
-		Name: "hello world",
+	// This is for fetching movies with searchword Batman from page 1-5
+	var wg sync.WaitGroup
+	for i := 1; i <= 5; i++ {
+		wg.Add(1)
+		i := i
+		go func() {
+			defer wg.Done()
+			result, err := c.FetchArticle(ctx, &rpc.FetchRequest{
+				Searchword: "Batman",
+				Page:       "3",
+			})
+			if err != nil {
+				log.Fatalf("could not getch movie: %v", err)
+			}
+			log.Printf("List Movie page %v detail: %v", i, result.Movies)
+		}()
+	}
+	wg.Wait()
+
+	fmt.Println("=================================SINGLE MOVIES=============================================")
+
+	// This is for Get Single Movies with IMDBID tt2975590
+	result, err := c.GetArticle(ctx, &rpc.SingleRequest{
+		Id: "tt2975590",
 	})
 	if err != nil {
-		log.Fatalf("could not create sample: %v" , err)
+		log.Fatalf("could not create sample: %v", err)
 	}
-	log.Printf("user detail: %v" , result)
+	log.Printf("user detail: %v", result)
+
 }
